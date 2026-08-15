@@ -3,9 +3,9 @@ WORKDIR /app
 
 COPY package*.json ./
 COPY server/package*.json ./server/
+COPY server/prisma/ ./server/prisma/
 RUN npm ci
 
-COPY server/prisma/ ./server/prisma/
 RUN npx prisma generate --schema=server/prisma/schema.prisma
 
 COPY server/ .

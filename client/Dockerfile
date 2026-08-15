@@ -3,6 +3,7 @@ WORKDIR /app
 
 COPY package*.json ./
 COPY client/package*.json ./client/
+COPY server/prisma/ ./prisma/
 RUN npm ci
 
 COPY client/ .

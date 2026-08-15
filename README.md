@@ -169,6 +169,53 @@ PORT="5000"
 
 > No secrets are hardcoded in the repository — all values come from `process.env`. The deployed backend reads and writes strictly to Supabase PostgreSQL.
 
+## Cloud Readiness & Kubernetes (Task 2)
+
+### Architecture diagram
+
+See **`EYOUTH-30905221100244-ShopSphere.pdf`** (repo root) — shows the exact Task 1
+production topology: Browser → Vercel Frontend → Vercel Backend → Supabase
+PostgreSQL + MongoDB Atlas, with traffic routes and the UptimeRobot health monitor.
+Source: `docs/EYOUTH-30905221100244-ShopSphere.html`.
+
+### Cloud service classification
+
+| Service | Classification | Justification |
+|---------|---------------|---------------|
+| Vercel Frontend (`shopsphere-frontend-henna.vercel.app`) | **PaaS** | Vercel builds, hosts, and CDN-serves the React SPA; no servers/OS managed by us. |
+| Vercel Backend (`shopsphere-server-pied.vercel.app`) | **PaaS** | Express API runs as Vercel-managed serverless functions — Vercel handles runtime, scaling, and TLS. |
+| Supabase (PostgreSQL) | **PaaS** | Fully managed PostgreSQL platform connected over the Postgres wire protocol; no server or engine administration. |
+| MongoDB Atlas | **PaaS / DBaaS** | Consumed as a hosted, managed MongoDB via connection string. |
+
+### Kubernetes multi-cloud simulation
+
+Two namespaces — `aws-simulation` and `gcp-simulation` — each run an isolated
+ShopSphere frontend + backend (Deployment + ClusterIP Service) on a local `kind`
+cluster, with strict same-namespace-only NetworkPolicy isolation.
+
+```bash
+# provision (see k8s/README.md for prerequisites & secrets)
+./k8s/apply.sh
+
+# verify
+kubectl get pods,svc -n aws-simulation     # 2 pods Ready (frontend + backend)
+kubectl get pods,svc -n gcp-simulation
+
+# isolation: own namespace works, the other is blocked
+kubectl exec deploy/backend -n aws-simulation -- curl -s http://backend.aws-simulation.svc.cluster.local:5000/api/health   # 200 ok
+kubectl exec deploy/backend -n aws-simulation -- curl -s -m 8 http://backend.gcp-simulation.svc.cluster.local:5000/api/health  # blocked
+
+# port-forward verification
+kubectl port-forward -n aws-simulation svc/frontend 3100:80
+kubectl port-forward -n aws-simulation svc/backend 3200:5000
+kubectl port-forward -n gcp-simulation svc/frontend 4100:80
+kubectl port-forward -n gcp-simulation svc/backend 4200:5000
+```
+
+Verified results: all 4 pods `1/1 Running`; `GET /api/health` returns
+`{"status":"ok","checks":{"postgres":"ok","mongodb":"ok"}}` in both namespaces;
+cross-namespace calls return `HTTP=000` (blocked). See `k8s/README.md` for details.
+
 ## Test Accounts
 
 ### Admin Account

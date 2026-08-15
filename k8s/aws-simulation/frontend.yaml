@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: aws-simulation
+  labels:
+    app: shopsphere
+    tier: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shopsphere
+      tier: frontend
+  template:
+    metadata:
+      labels:
+        app: shopsphere
+        tier: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: shopsphere-frontend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 15
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: aws-simulation
+spec:
+  type: ClusterIP
+  selector:
+    app: shopsphere
+    tier: frontend
+  ports:
+    - port: 80
+      targetPort: 80

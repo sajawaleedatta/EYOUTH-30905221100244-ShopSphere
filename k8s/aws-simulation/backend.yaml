@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: aws-simulation
+data:
+  PORT: "5000"
+  NODE_ENV: "production"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: aws-simulation
+  labels:
+    app: shopsphere
+    tier: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shopsphere
+      tier: backend
+  template:
+    metadata:
+      labels:
+        app: shopsphere
+        tier: backend
+    spec:
+      containers:
+        - name: backend
+          image: shopsphere-backend:latest
+          imagePullPolicy: IfNotPresent
+          command: ["node", "dist/index.js"]
+          ports:
+            - containerPort: 5000
+          envFrom:
+            - configMapRef:
+                name: backend-config
+            - secretRef:
+                name: app-secrets
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 5000
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 5000
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            failureThreshold: 6
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: aws-simulation
+spec:
+  type: ClusterIP
+  selector:
+    app: shopsphere
+    tier: backend
+  ports:
+    - port: 5000
+      targetPort: 5000
