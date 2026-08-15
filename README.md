@@ -130,7 +130,7 @@ ecommence/
 | Frontend | https://shopsphere-frontend-henna.vercel.app |
 | Backend API | https://shopsphere-server-pied.vercel.app/api |
 | Health Check | https://shopsphere-server-pied.vercel.app/api/health |
-| Database | PostgreSQL on Supabase (project ref `sexqyoxgzwweenwdqkgc`) |
+| Database | PostgreSQL on Supabase (managed, credentials via Vercel env vars) |
 
 ### Local Development
 
