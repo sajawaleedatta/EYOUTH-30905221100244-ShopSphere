@@ -4,6 +4,8 @@ module.exports = {
   testEnvironment: "node",
   roots: ["<rootDir>/src"],
   testMatch: ["**/__tests__/**/*.test.ts"],
+  setupFiles: ["<rootDir>/jest.setup.js"],
+  testTimeout: 30000,
   moduleFileExtensions: ["ts", "js", "json"],
   clearMocks: true,
 };

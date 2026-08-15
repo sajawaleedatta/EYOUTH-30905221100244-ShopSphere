@@ -123,6 +123,17 @@ ecommence/
 
 ## Project URLs
 
+### Production (Live)
+
+| Service | URL |
+|---------|-----|
+| Frontend | https://shopsphere-frontend-henna.vercel.app |
+| Backend API | https://shopsphere-server-pied.vercel.app/api |
+| Health Check | https://shopsphere-server-pied.vercel.app/api/health |
+| Database | PostgreSQL on Supabase (project ref `sexqyoxgzwweenwdqkgc`) |
+
+### Local Development
+
 | Service | Local Development | Docker |
 |---------|------------------|--------|
 | Frontend | `http://localhost:5173` | `http://localhost:3000` |
@@ -130,6 +141,31 @@ ecommence/
 | Health Check | `http://localhost:5000/api/health` | `http://localhost:5000/api/health` |
 | PostgreSQL | `localhost:5432` | `localhost:5432` |
 | MongoDB | `localhost:27017` | `localhost:27017` |
+
+## Production Deployment (Task 1)
+
+The application is deployed to Vercel with a managed PostgreSQL database on Supabase:
+
+- **Frontend**: Vercel project `shopsphere-frontend` (root directory `client`). The build uses `VITE_API_URL` (set as a production env var) pointing to the deployed backend.
+- **Backend**: Vercel project `shopsphere-server` (root directory `server`). Express is deployed as a single Vercel function (zero-config detection of `src/app.ts`).
+- **Database**: Prisma migrations + seed data applied to Supabase PostgreSQL. Runtime uses the Supabase transaction pooler (`DATABASE_URL`, port 6543) and migrations use the direct connection (`DIRECT_URL`, port 5432).
+- **Security**: `helmet`, strict `cors` (only the frontend origin via `CORS_ORIGIN`), and `express-rate-limit` (300 req / 15 min) are active in production.
+- **Health & uptime**: `GET /api/health` returns operational status with DB connectivity checks (200 when Postgres is reachable) and is registered with an uptime monitor.
+
+### Production environment variables (Vercel: `shopsphere-server`)
+
+```
+DATABASE_URL="postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1"
+DIRECT_URL="postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres"
+JWT_SECRET="<random>"
+JWT_EXPIRES_IN="7d"
+EMAIL_FROM="noreply@decitechno.com"
+CLIENT_URL="https://shopsphere-frontend-henna.vercel.app"
+CORS_ORIGIN="https://shopsphere-frontend-henna.vercel.app"
+PORT="5000"
+```
+
+> No secrets are hardcoded in the repository — all values come from `process.env`. The deployed backend reads and writes strictly to Supabase PostgreSQL.
 
 ## Test Accounts
 
