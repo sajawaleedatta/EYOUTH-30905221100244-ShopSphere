@@ -149,6 +149,7 @@ The application is deployed to Vercel with a managed PostgreSQL database on Supa
 - **Frontend**: Vercel project `shopsphere-frontend` (root directory `client`). The build uses `VITE_API_URL` (set as a production env var) pointing to the deployed backend.
 - **Backend**: Vercel project `shopsphere-server` (root directory `server`). Express is deployed as a single Vercel function (zero-config detection of `src/app.ts`).
 - **Database**: Prisma migrations + seed data applied to Supabase PostgreSQL. Runtime uses the Supabase transaction pooler (`DATABASE_URL`, port 6543) and migrations use the direct connection (`DIRECT_URL`, port 5432).
+- **MongoDB**: Reviews, activity logs, and admin stats run on MongoDB Atlas (`MONGODB_URI`), connected on lambda cold start with graceful degradation if unavailable.
 - **Security**: `helmet`, strict `cors` (only the frontend origin via `CORS_ORIGIN`), and `express-rate-limit` (300 req / 15 min) are active in production.
 - **Health & uptime**: `GET /api/health` returns operational status with DB connectivity checks (200 when Postgres is reachable) and is registered with an uptime monitor.
 
@@ -157,6 +158,7 @@ The application is deployed to Vercel with a managed PostgreSQL database on Supa
 ```
 DATABASE_URL="postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1"
 DIRECT_URL="postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres"
+MONGODB_URI="mongodb+srv://<user>:<password>@cluster0.xxxxx.mongodb.net/ecommence?retryWrites=true&w=majority"
 JWT_SECRET="<random>"
 JWT_EXPIRES_IN="7d"
 EMAIL_FROM="noreply@decitechno.com"
