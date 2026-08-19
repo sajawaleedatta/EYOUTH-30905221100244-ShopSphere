@@ -1,9 +1,18 @@
 import multer from "multer";
 import path from "path";
+import fs from "fs";
+import os from "os";
+
+const uploadsDir = process.env.VERCEL
+  ? path.join(os.tmpdir(), "uploads")
+  : path.join(__dirname, "../../uploads");
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
-    cb(null, path.join(__dirname, "../../uploads"));
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+    cb(null, uploadsDir);
   },
   filename: (_req, file, cb) => {
     const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;

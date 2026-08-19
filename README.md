@@ -216,6 +216,34 @@ Verified results: all 4 pods `1/1 Running`; `GET /api/health` returns
 `{"status":"ok","checks":{"postgres":"ok","mongodb":"ok"}}` in both namespaces;
 cross-namespace calls return `HTTP=000` (blocked). See `k8s/README.md` for details.
 
+## Application Modernization (Task 3)
+
+### Review Microservice Extraction
+
+The review functionality has been extracted from the monolith into a standalone
+service: **`EYOUTH-30905221100244-ShopSphere-Review-Service/`**.
+
+| Component | Location | Description |
+|-----------|----------|-------------|
+| Review Service | `EYOUTH-30905221100244-ShopSphere-Review-Service/` | Independent Express + TypeScript app with own MongoDB |
+| Main App Proxy | `server/src/routes/review.proxy.ts` | Forwards `/api/reviews/*` to the review service with try/catch |
+| Internal Rating Sync | `server/src/routes/internal.routes.ts` | Review service calls back to update Product ratings |
+| Serverless Notifications | `api/notification.js` | Vercel serverless function for background tasks |
+
+**Key design decisions:**
+- The main app has **zero local review logic** — no Review model, no review controller
+- All review requests are proxied with **graceful degradation** (503 if service is down)
+- The review service owns its MongoDB and calls back to the main app for rating updates
+- See `docs/ADR-001-review-extraction.md` for the full Architecture Decision Record
+
+### Running the Review Service
+
+```bash
+cd EYOUTH-30905221100244-ShopSphere-Review-Service
+cp .env.example .env   # configure MONGODB_URI, JWT_SECRET, MAIN_APP_URL
+npm install && npm run dev
+```
+
 ## Test Accounts
 
 ### Admin Account

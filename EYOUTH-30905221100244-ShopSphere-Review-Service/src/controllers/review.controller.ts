@@ -1,16 +1,31 @@
 import { Response } from "express";
-import mongoose from "mongoose";
-import prisma from "../config/database";
-import { AuthRequest } from "../types/auth";
 import Review from "../models/Review";
+import { AuthRequest } from "../types/auth";
+
+const MAIN_APP_URL = process.env.MAIN_APP_URL || "http://localhost:5000";
+
+const updateProductRating = async (productId: string): Promise<void> => {
+  try {
+    const stats = await Review.aggregate([
+      { $match: { productId } },
+      { $group: { _id: null, avgRating: { $avg: "$rating" }, count: { $sum: 1 } } },
+    ]);
+
+    const avg = stats[0] ? Math.round(stats[0].avgRating * 10) / 10 : 0;
+    const count = stats[0]?.count ?? 0;
+
+    await fetch(`${MAIN_APP_URL}/api/internal/products/${productId}/rating`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rating: avg, reviewCount: count }),
+    });
+  } catch (error) {
+    console.error("Failed to update product rating:", error);
+  }
+};
 
 export const getProductReviews = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    if (mongoose.connection.readyState !== 1) {
-      res.json({ success: true, data: [] });
-      return;
-    }
-
     const { productId } = req.params as { productId: string };
     const reviews = await Review.find({ productId }).sort({ createdAt: -1 }).lean();
     res.json({ success: true, data: reviews });
@@ -21,11 +36,6 @@ export const getProductReviews = async (req: AuthRequest, res: Response): Promis
 
 export const createReview = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    if (mongoose.connection.readyState !== 1) {
-      res.status(503).json({ success: false, error: "Reviews are temporarily unavailable." });
-      return;
-    }
-
     const { productId, rating, comment } = req.body as {
       productId?: string;
       rating?: number;
@@ -39,12 +49,6 @@ export const createReview = async (req: AuthRequest, res: Response): Promise<voi
 
     if (rating < 1 || rating > 5) {
       res.status(400).json({ success: false, error: "Rating must be between 1 and 5." });
-      return;
-    }
-
-    const product = await prisma.product.findUnique({ where: { id: productId } });
-    if (!product) {
-      res.status(404).json({ success: false, error: "Product not found." });
       return;
     }
 
@@ -62,18 +66,7 @@ export const createReview = async (req: AuthRequest, res: Response): Promise<voi
       comment,
     });
 
-    const stats = await Review.aggregate([
-      { $match: { productId } },
-      { $group: { _id: null, avgRating: { $avg: "$rating" }, count: { $sum: 1 } } },
-    ]);
-
-    const avg = stats[0] ? Math.round(stats[0].avgRating * 10) / 10 : rating;
-    const count = stats[0]?.count ?? 1;
-
-    await prisma.product.update({
-      where: { id: productId },
-      data: { rating: avg, reviewCount: count },
-    });
+    await updateProductRating(productId);
 
     res.status(201).json({ success: true, data: review });
   } catch {
@@ -83,11 +76,6 @@ export const createReview = async (req: AuthRequest, res: Response): Promise<voi
 
 export const deleteReview = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    if (mongoose.connection.readyState !== 1) {
-      res.status(503).json({ success: false, error: "Reviews are temporarily unavailable." });
-      return;
-    }
-
     const { id } = req.params as { id: string };
 
     const review = await Review.findById(id);
@@ -104,18 +92,7 @@ export const deleteReview = async (req: AuthRequest, res: Response): Promise<voi
     const productId = review.productId;
     await Review.findByIdAndDelete(id);
 
-    const stats = await Review.aggregate([
-      { $match: { productId } },
-      { $group: { _id: null, avgRating: { $avg: "$rating" }, count: { $sum: 1 } } },
-    ]);
-
-    const avg = stats[0] ? Math.round(stats[0].avgRating * 10) / 10 : 0;
-    const count = stats[0]?.count ?? 0;
-
-    await prisma.product.update({
-      where: { id: productId },
-      data: { rating: avg, reviewCount: count },
-    });
+    await updateProductRating(productId);
 
     res.json({ success: true, message: "Review deleted." });
   } catch {

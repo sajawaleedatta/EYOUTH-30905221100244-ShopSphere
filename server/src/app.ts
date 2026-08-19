@@ -12,9 +12,15 @@ import productRoutes from "./routes/product.routes";
 import cartRoutes from "./routes/cart.routes";
 import orderRoutes from "./routes/order.routes";
 import adminRoutes from "./routes/admin/routes";
-import reviewRoutes from "./routes/review.routes";
+import reviewProxyRoutes from "./routes/review.proxy";
+import internalRoutes from "./routes/internal.routes";
+import { requestLogger, errorLogger } from "./middleware/requestLogger";
 
 const app = express();
+
+app.set("trust proxy", 1);
+
+app.use(requestLogger);
 
 const corsOrigins = (process.env.CORS_ORIGIN || process.env.CLIENT_URL || "")
   .split(",")
@@ -76,7 +82,10 @@ app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
-app.use("/api/reviews", reviewRoutes);
+app.use("/api/reviews", reviewProxyRoutes);
+app.use("/api/internal", internalRoutes);
 app.use("/api/admin", adminRoutes);
+
+app.use(errorLogger);
 
 export default app;
