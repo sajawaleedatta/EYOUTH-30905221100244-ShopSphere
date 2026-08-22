@@ -4,6 +4,7 @@ import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import reviewRoutes from "./routes/review.routes";
+import connectMongoDB from "./config/mongodb";
 
 const app = express();
 
@@ -31,6 +32,8 @@ app.use(
 );
 
 app.use(express.json());
+
+void connectMongoDB();
 
 app.get("/", (_req, res) => {
   res.json({ status: "ok", service: "ShopSphere Review Service", version: "1.0.0" });

@@ -3,6 +3,7 @@ import { authenticate } from "../middleware/auth";
 import { AuthRequest } from "../types/auth";
 
 const REVIEW_SERVICE_URL = process.env.REVIEW_SERVICE_URL || "http://localhost:5001";
+const INTERNAL_TOKEN = process.env.INTERNAL_TOKEN || "";
 
 const router = Router();
 
@@ -17,8 +18,11 @@ const proxyToReviewService = async (
       "Content-Type": "application/json",
     };
 
-    if (req.headers.authorization) {
-      headers["Authorization"] = req.headers.authorization;
+    if (req.user) {
+      headers["x-internal-token"] = INTERNAL_TOKEN;
+      headers["x-user-id"] = req.user.userId;
+      headers["x-user-email"] = req.user.email;
+      headers["x-user-role"] = req.user.role;
     }
 
     const fetchOptions: RequestInit = {

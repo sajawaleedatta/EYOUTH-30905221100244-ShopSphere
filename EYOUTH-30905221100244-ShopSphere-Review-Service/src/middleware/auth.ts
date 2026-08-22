@@ -1,33 +1,25 @@
-import jwt from "jsonwebtoken";
-import { Response, NextFunction } from "express";
-import { AuthRequest, JwtPayload } from "../types/auth";
-
-const getSecret = (): string => {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    throw new Error("JWT_SECRET environment variable is required");
-  }
-  return secret;
-};
-
-export const verifyToken = (token: string): JwtPayload => {
-  const secret = getSecret();
-  return jwt.verify(token, secret) as JwtPayload;
-};
+import { Request, Response, NextFunction } from "express";
+import { AuthRequest } from "../types/auth";
 
 export const authenticate = (req: AuthRequest, res: Response, next: NextFunction): void => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  const token = req.headers["x-internal-token"];
+  const expected = process.env.INTERNAL_TOKEN;
+
+  if (!expected || !token || token !== expected) {
     res.status(401).json({ success: false, error: "Authentication required." });
     return;
   }
 
-  const token = authHeader.split(" ")[1];
-  try {
-    const decoded = verifyToken(token);
-    req.user = decoded;
-    next();
-  } catch {
-    res.status(401).json({ success: false, error: "Invalid or expired token." });
+  const userId = req.headers["x-user-id"];
+  if (!userId || typeof userId !== "string") {
+    res.status(401).json({ success: false, error: "Invalid internal request." });
+    return;
   }
+
+  req.user = {
+    userId,
+    email: typeof req.headers["x-user-email"] === "string" ? req.headers["x-user-email"] : "",
+    role: req.headers["x-user-role"] === "ADMIN" ? "ADMIN" : "CUSTOMER",
+  };
+  next();
 };

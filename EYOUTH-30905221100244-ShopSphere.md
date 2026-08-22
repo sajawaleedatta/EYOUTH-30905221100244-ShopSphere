@@ -11,6 +11,8 @@
 | Frontend | https://shopsphere-frontend-henna.vercel.app | React SPA (customer + admin) |
 | Backend API | https://shopsphere-server-pied.vercel.app/api | Express REST API |
 | Health Check | https://shopsphere-server-pied.vercel.app/api/health | Uptime & DB connectivity |
+| Review Service | https://shopsphere-review-service.vercel.app/api/reviews/product/:productId | Review microservice (health: `/api/health`) |
+| Serverless Function | https://shopsphere-server-pied.vercel.app/api/notification | Background notifications (POST) |
 
 ---
 

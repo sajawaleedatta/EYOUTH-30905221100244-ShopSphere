@@ -228,7 +228,7 @@ service: **`EYOUTH-30905221100244-ShopSphere-Review-Service/`**.
 | Review Service | `EYOUTH-30905221100244-ShopSphere-Review-Service/` | Independent Express + TypeScript app with own MongoDB |
 | Main App Proxy | `server/src/routes/review.proxy.ts` | Forwards `/api/reviews/*` to the review service with try/catch |
 | Internal Rating Sync | `server/src/routes/internal.routes.ts` | Review service calls back to update Product ratings |
-| Serverless Notifications | `api/notification.js` | Vercel serverless function for background tasks |
+| Serverless Notifications | `server/api/notification.js` | Vercel serverless function for background tasks |
 
 **Key design decisions:**
 - The main app has **zero local review logic** — no Review model, no review controller
